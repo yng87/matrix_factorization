@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 
 class MatrixFactorization():
     """
@@ -48,12 +47,21 @@ class MatrixFactorization():
             error = error + self.__b/2*(np.sum(self.__U[iu]**2) + np.sum(self.__V[ii]**2) + self.__bu[iu]**2 + self.__bi[ii]**2)
         return np.sqrt(error)
         
-    def train(self, tol=1.0, step=1000, debug=True):
+    def train(self, tol=1.0, step=1000, debug=False):
         self.__U = np.random.rand(self.__user_size, self.__K)
         self.__V = np.random.rand(self.__item_size, self.__K)
         self.__bu = np.zeros(self.__user_size)
         self.__bi = np.zeros(self.__item_size)
 
+        #For and while, whcih is faster??
+        # ius, iis = self.__R.nonzero()
+        # for i in range(2000000):
+        #     i_rand = np.random.randint(0, np.size(ius))
+        #     self.sgd(iu=ius[i_rand], ii=iis[i_rand])
+        #     if i % 1000 == 0:
+        #         print(i, self.error())
+        #     i = i + 1
+    
         iiter = 0
         diff = tol*1000
         err_new = self.error()
@@ -61,12 +69,12 @@ class MatrixFactorization():
         while diff > tol:
             i_rand = np.random.randint(0, np.size(ius))
             self.sgd(iu=ius[i_rand], ii=iis[i_rand])
-            if iiter % step ==0:
+            if iiter % step ==0 and iiter > step:
                 err_old = err_new
                 err_new = self.error()
                 diff = np.fabs(err_new - err_old)
                 if debug is True:
-                    print(iiter, err_new)
+                    print(iiter, err_new, diff)
             iiter = iiter + 1
         if debug is True:
             print("Total iteration is ", iiter, "Resultant mean square error is ", err_new)
