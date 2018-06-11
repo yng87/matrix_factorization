@@ -8,7 +8,7 @@ class MatrixFactorization():
     R = UV with bias vectors of users (bu) and items (bv).
     """
 
-    def __init__(self, R, K, a=2.e-4, b=0.02):
+    def __init__(self, R, K, a=0.001, b=0.02):
         """
         Input variables:
         - R (np.array) : Rating data R[user_id, item_id] used for training.
@@ -65,7 +65,7 @@ class MatrixFactorization():
         
         return np.sqrt(error)
         
-    def train(self, atol=1.0, maxitr=2000000, step=1000, debug=False):
+    def train(self, tol=1.e-3, maxitr=2000000,  debug=False):
         """
         Training module for a given rating matrix R.
 
@@ -89,26 +89,45 @@ class MatrixFactorization():
         self.__bu = np.zeros(self.__user_size)
         self.__bi = np.zeros(self.__item_size)
 
-        # initialize the object for np.fabs(new_result - old_result)
-        diff = atol*1000
+        # initialize the object for np.fabs(new_result / old_result)
+        ratio = tol*1000
         # initialize the object for sqrt(squared error)
         err_new = self.error() 
 
-        # Loop for performing sgd many times until convergence
+        # The set of [user_id], [item_id] giving nonzero rating
         ius, iis = self.__R.nonzero()
-        for i in range(maxitr):
-            # sgd for randomly chosen (user, item) pair
-            i_rand = np.random.randint(0, np.size(ius))
-            self.sgd(iu=ius[i_rand], ii=iis[i_rand])
 
-            # once a step, evaluate error and check the convergence
-            if i % step == 0 and i>0:
-                err_old = err_new
-                err_new = self.error()
-                if debug is True: print(i, err_new)
-                diff = np.fabs(err_new - err_old)
-                if diff < atol: break
-            i = i + 1
+        # Iteration of sgd
+        size_nonzero = np.size(ius)
+        i_rands = np.arange(size_nonzero)
+        if debug is True: print("epoch", "convergence")
+        for i in range(maxitr):
+            # Shuffle the set of training data
+            np.random.shuffle(i_rands)
+            for i_rand in i_rands:
+                # sgd for randomly chosen (user, item) pair
+                self.sgd(iu=ius[i_rand], ii=iis[i_rand])
+
+            err_old = err_new
+            err_new = self.error()
+            ratio = err_new/err_old
+            if debug is True: print(i, 1-ratio)
+            if np.fabs(ratio - 1.0) < tol: break
+
+        # Naive implementation
+        # for i in range(maxitr):
+        #     # sgd for randomly chosen (user, item) pair
+        #     i_rand = np.random.randint(0, np.size(ius))
+        #     self.sgd(iu=ius[i_rand], ii=iis[i_rand])
+
+        #     # once a step, evaluate error and check the convergence
+        #     if i % step == 0 and i>0:
+        #         err_old = err_new
+        #         err_new = self.error()
+        #         if debug is True: print(i, err_new)
+        #         diff = np.fabs(err_new - err_old)
+        #         if diff < atol: break
+        #     i = i + 1
 
     @property
     def U(self):
@@ -139,8 +158,8 @@ class MatrixFactorization():
         return self.__mu + self.__bu[:, np.newaxis] + self.__bi[np.newaxis, :] + np.dot(self.__U, np.transpose(self.__V))
             
 if __name__ == "__main__":
-    mf = MatrixFactorization(np.array([[1,0, 0, 4], [0,3,2,2], [3,4,0,0]]), 10)
-    mf.train(atol=1.e-3, step=1000)
+    mf = MatrixFactorization(np.array([[1,0, 0, 4], [0,3,2,2], [3,4,0,0]]), 10, a=0.01)
+    mf.train(atol=1.e-4, step=1000, debug=True)
     #print(mf.U, mf.V, mf.bu, mf.bi)
     print(mf.rating(0,1))
     print(mf.rating_matrix())
