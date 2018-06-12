@@ -88,7 +88,7 @@ class MatrixFactorization():
         
         return error
         
-    def train(self, tol=1.e-3, maxitr=2000000,  debug=False):
+    def train(self, tol=1.e-2, maxitr=2000000, debug=False):
         """
         Training module for a given rating matrix R.
 
@@ -123,7 +123,7 @@ class MatrixFactorization():
         # Iteration of sgd
         size_nonzero = np.size(ius)
         i_rands = np.arange(size_nonzero)
-        if debug is True: print("epoch", "convergence")
+        if debug is True: print("epoch, convergence, error function, error function of test data")
         for i in range(maxitr):
             # Shuffle the set of training data
             np.random.shuffle(i_rands)
@@ -136,21 +136,6 @@ class MatrixFactorization():
             ratio = err_new/err_old
             if debug is True: print(i, 1-ratio, err_new, self.error_test())
             if np.fabs(ratio - 1.0) < tol: break
-
-        # Naive implementation
-        # for i in range(maxitr):
-        #     # sgd for randomly chosen (user, item) pair
-        #     i_rand = np.random.randint(0, np.size(ius))
-        #     self.sgd(iu=ius[i_rand], ii=iis[i_rand])
-
-        #     # once a step, evaluate error and check the convergence
-        #     if i % step == 0 and i>0:
-        #         err_old = err_new
-        #         err_new = self.error()
-        #         if debug is True: print(i, err_new)
-        #         diff = np.fabs(err_new - err_old)
-        #         if diff < atol: break
-        #     i = i + 1
 
     @property
     def U(self):
