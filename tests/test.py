@@ -2,8 +2,7 @@ import pandas as pd
 import numpy as np
 import sys
 import argparse
-sys.path.append("../")
-from  matrix_factorization.matrix_factorization import MatrixFactorization
+from  matrix_factorization import MatrixFactorization
 
 def get_rating(data_dir, base, test, debug=False):
     """
