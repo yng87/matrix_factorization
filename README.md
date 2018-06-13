@@ -1,51 +1,49 @@
 # matrix_factorization
-Recommendation system based on matrix factorization.
+This module provides MatrixFactorization class, a symple implementation of the matrix factorization for a recommendation system.
+
+It works on Python3.
 
 ## Getting Started
 
-
-### Prerequisites
-
-What things you need to install the software and how to install them
-
-```
-Give examples
-```
-
 ### Installing
 
-
-Say what the step will be
-
+Download and unzip. Then install by
 ```
-Give the example
-```
-
-And repeat
-
-```
-until finished
+cd matrix_factorization
+pip install ./
 ```
 
-End with an example of getting some data out of the system or using it for a little demo
-
-## Running the tests
-
-Explain how to run the automated tests for this system
-
-### Break down into end to end tests
-
-Explain what these tests test and why
-
+### How to use
+To use in your code, import the module by, e.g., 
 ```
-Give an example
+from matrix_factorization import MatrixFactorization
+```
+then give training rating matrix R and test matrix R_test, and perform training
+```
+mf = MatrixFactorization(R=R, R_test=R_test)
+mf.train()
+```
+The resulting rating matrix is called by
+```
+mf.rating_matrix()
 ```
 
-### And coding style tests
+## Running the test
 
-Explain what these tests test and why
+In the directory tests, there is a test code test.py
 
+The data directory is taken from https://grouplens.org/datasets/movielens/.
+
+It offers the ratings of movies by 1, 2, 3, 4 or 5.
+
+Run the test code by
 ```
-Give an example
+python test.py
+```
+You can provide three command line arguments:
+```
+--data_dir (default="ml-100k/"): data directory path
+--base (default="u1.base"): dataset for training
+--test (default="u1.test"): dataset for test
 ```
 
