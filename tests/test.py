@@ -52,19 +52,22 @@ def main():
     psr.add_argument("--data_dir", default="ml-100k/")
     psr.add_argument("--base", default="u1.base")
     psr.add_argument("--test", default="u1.test")
+    psr.add_argument("--a", default=0.01, type=float)
+    psr.add_argument("--b", default=0.2, type=float)
+    psr.add_argument("--K", default=50, type=int)
+    psr.add_argument("--tol", default=3.e-2, type=float)
     args = psr.parse_args()
 
     # Get rating matrix
     R, R_test = get_rating(data_dir=args.data_dir, base=args.base, test=args.test, debug=True)
 
     # Training
-    mf = MatrixFactorization(R=R, R_test=R_test, K=100)
+    mf = MatrixFactorization(R=R, R_test=R_test, K=args.K, a=args.a, b=args.b)
     print("training...")
-    mf.train(debug=True)
+    mf.train(tol=args.tol, debug=True)
 
-    
-    print("The number of test data is {}.".format(np.size(R_test.nonzero()[0])))
-    print("The number of correct predictions is {}.".format(np.sum((np.round(mf.rating_matrix()) == R_test).astype(int))))
+    #print("The number of test data is {}.".format(np.size(R_test.nonzero()[0])))
+    #print("The number of correct predictions is {}.".format(np.sum((np.round(mf.rating_matrix()) == R_test).astype(int))))
 
 if __name__ == "__main__":
     main()

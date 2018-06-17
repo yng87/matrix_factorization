@@ -73,7 +73,7 @@ class MatrixFactorization():
 
     def error_test(self):
         """
-        Compute sqrt(mean squared error), which is minimized by sgd method.
+        Compute sqrt(mean squared error).
         """
         error = 0.0
 
@@ -84,20 +84,19 @@ class MatrixFactorization():
         error = np.sum(((self.__R_test - Rhat) * self.__test_index)**2)/self.__test_size
         
         # Add regularization terms
-        error = error + self.__b/2*(np.sum(self.__U**2) + np.sum(self.__V**2) + np.sum(self.__bu**2) + np.sum(self.__bi**2))
+        #error = error + self.__b/2*(np.sum(self.__U**2) + np.sum(self.__V**2) + np.sum(self.__bu**2) + np.sum(self.__bi**2))
         
-        return error
+        return np.sqrt(error)
         
     def train(self, tol=1.e-2, maxitr=2000000, debug=False):
         """
         Training module for a given rating matrix R.
 
-        - atol: absolute tolerance. 
-        - maxitr: the max number of performing sgd.
-        - step: error function is called once a step.
+        - tol: relative tolerance. 
+        - maxitr: the max number of epoch.
         - debug: if True, intermediate result is printed.
         
-        If |error[(n+1)*step] - error[n*step]| < atol, training finishes.
+        If |error[(n+1)epoch]/error[n epoch]  - 1| < atol, training finishes.
        
         We first prepair the objects which factorize rating matrix R:
         - U = (u_1, u_2, ...)^T: u_i characterizes the preference of user i.
@@ -123,7 +122,9 @@ class MatrixFactorization():
         # Iteration of sgd
         size_nonzero = np.size(ius)
         i_rands = np.arange(size_nonzero)
-        if debug is True: print("epoch, convergence, error function, error function of test data")
+        if debug is True:
+            print("-----------------------------------------------------")
+            print("epoch, convergence, error function, RMSE of test data")
         for i in range(maxitr):
             # Shuffle the set of training data
             np.random.shuffle(i_rands)
@@ -135,7 +136,9 @@ class MatrixFactorization():
             err_new = self.error()
             ratio = err_new/err_old
             if debug is True: print(i, 1-ratio, err_new, self.error_test())
-            if np.fabs(ratio - 1.0) < tol: break
+            if np.fabs(ratio - 1.0) < tol:break
+        if debug is True:
+            print("-----------------------------------------------------")
 
     @property
     def U(self):
