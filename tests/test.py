@@ -48,6 +48,8 @@ def main():
     """
     main function for test
     """
+
+    # For command line arguments
     psr = argparse.ArgumentParser()
     psr.add_argument("--data_dir", default="ml-100k/")
     psr.add_argument("--base", default="u1.base")

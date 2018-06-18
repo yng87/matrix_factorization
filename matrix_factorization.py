@@ -2,34 +2,35 @@ import numpy as np
 
 class MatrixFactorization():
     """
-    This class receives a matrix R which contains rating data of the form 
-    R[user_id, item_id] = rating of item[item_id] by user[user_id],
-    and factorize R into user characterstic matrix U and item cahracteristic matrix V;
-    R = UV with bias vectors of users (bu) and items (bv).
+    This class receives a rating matrix R. R[u, i] = rating of item i by user u,
+    and factorize R into user characterstic matrix U and item cahracteristic matrix V
+    with bias vectors of users and items.
     """
 
     def __init__(self, R, R_test, K=10, a=0.01, b=0.2):
         """
         Input variables:
         - R (np.array) : Rating data R[user_id, item_id] used for training.
-                         The rating score should be 1, 2, 3, 4 or 5.
+                         The rating score should be dimensionless quantity.
                          Missing data should be set at 0.
-        - R_test : Rating data for test
+        - R_test : Test data by which we examine the validity of the learning model.
         - K (int) : the size of user vector U[i] and item vector V[j].
-        - a (float) : parameter for optimization. 
-        - b (float) : parameter for regularization.
+        - a (float) : learning rate parameter
+        - b (float) : overall coefficient of the regularization terms.
         """
-        
+
+        # Read and store input variables
         self.__R = R
         self.__R_test = R_test
         self.__K = K
         self.__a = a
         self.__b = b
 
+        # Get the size of training and test data
         self.__train_size = np.sum(self.__R > 0)
         self.__test_size = np.sum(self.__R_test > 0)
 
-        # Get the number of user and of item.
+        # Get the number of user and item.
         self.__user_size = self.__R.shape[0]
         self.__item_size = self.__R.shape[1]
 
@@ -56,7 +57,7 @@ class MatrixFactorization():
 
     def error(self):
         """
-        Compute sqrt(mean squared error), which is minimized by sgd method.
+        Compute (mean square error) + (Regulatization), which is minimized by SGD method.
         """
         error = 0.0
 
@@ -73,18 +74,15 @@ class MatrixFactorization():
 
     def error_test(self):
         """
-        Compute sqrt(mean squared error).
+        Compute sqrt(mean square error) of test data.
         """
         error = 0.0
 
         # Rhat is predicted rating matrix
         Rhat = self.__mu + self.__bu[:, np.newaxis] + self.__bi[np.newaxis, :] + np.dot(self.__U, np.transpose(self.__V))
         
-        # Squared error consisting only of the observed element of rating matrix R.
+        # Squared error consisting only of the observed element of test matrix R_test.
         error = np.sum(((self.__R_test - Rhat) * self.__test_index)**2)/self.__test_size
-        
-        # Add regularization terms
-        #error = error + self.__b/2*(np.sum(self.__U**2) + np.sum(self.__V**2) + np.sum(self.__bu**2) + np.sum(self.__bi**2))
         
         return np.sqrt(error)
         
@@ -96,15 +94,15 @@ class MatrixFactorization():
         - maxitr: the max number of epoch.
         - debug: if True, intermediate result is printed.
         
-        If |error[(n+1)epoch]/error[n epoch]  - 1| < atol, training finishes.
+        If |error[(n+1)epoch]/error[n epoch]  - 1| < tol, training finishes.
        
         We first prepair the objects which factorize rating matrix R:
-        - U = (u_1, u_2, ...)^T: u_i characterizes the preference of user i.
+        - U = (u_1, u_2, ...)^T: u_i characterizes the user i.
         - V = (v_1, v_2, ...)^T: v_i characterizes the item i.
         - bu: bias vector of user.
         - bi: bias vector of item.
         
-        predicted rating matrix = mu + bu + bi + U.V^T.
+        predicted rating matrix takes the form of mu + bu + bi + U.V^T.
         """
         self.__U = np.random.rand(self.__user_size, self.__K)
         self.__V = np.random.rand(self.__item_size, self.__K)
@@ -113,7 +111,7 @@ class MatrixFactorization():
 
         # initialize the object for np.fabs(new_result / old_result)
         ratio = tol*1000
-        # initialize the object for sqrt(squared error)
+        # initialize the object for error function
         err_new = self.error() 
 
         # The set of [user_id], [item_id] giving nonzero rating
@@ -167,10 +165,4 @@ class MatrixFactorization():
         Return whole predicted rating matrix.
         """
         return self.__mu + self.__bu[:, np.newaxis] + self.__bi[np.newaxis, :] + np.dot(self.__U, np.transpose(self.__V))
-            
-if __name__ == "__main__":
-    mf = MatrixFactorization(np.array([[1,0, 0, 4], [0,3,2,2], [3,4,0,0]]), 10, a=0.01)
-    mf.train(atol=1.e-4, step=1000, debug=True)
-    #print(mf.U, mf.V, mf.bu, mf.bi)
-    print(mf.rating(0,1))
-    print(mf.rating_matrix())
+
