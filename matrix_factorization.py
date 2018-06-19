@@ -2,9 +2,12 @@ import numpy as np
 
 class MatrixFactorization():
     """
-    This class receives a rating matrix R. R[u, i] = rating of item i by user u,
+    This class receives a rating matrix R, where R[u, i] = rating of item i by user u,
     and factorize R into user characterstic matrix U and item cahracteristic matrix V
     with bias vectors of users and items.
+    
+    !!!CAUTION!!!
+    The missing elements of R and R_test should be provide as 0; otherwise the class does not work.
     """
 
     def __init__(self, R, R_test, K=10, a=0.01, b=0.2):

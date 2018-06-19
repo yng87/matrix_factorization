@@ -23,6 +23,8 @@ then give training rating matrix ```R``` and test matrix ```R_test```, and perfo
 mf = MatrixFactorization(R=R, R_test=R_test)
 mf.train()
 ```
+Note that the missing elements of ```R``` and ```T_test``` are provided as 0;
+otherwise the error function does not work properly.
 The resulting rating matrix is called by
 ```
 mf.rating_matrix()
