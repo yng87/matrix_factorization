@@ -2,20 +2,17 @@ import numpy as np
 
 class MatrixFactorization():
     """
-    This class receives a rating matrix R, where R[u, i] = rating of item i by user u,
+    This class receives a training data R, and test data R_test
     and factorize R into user characterstic matrix U and item cahracteristic matrix V
     with bias vectors of users and items.
     
-    !!!CAUTION!!!
-    The missing elements of R and R_test should be provide as 0; otherwise the class does not work.
     """
 
-    def __init__(self, R, R_test, K=10, a=0.01, b=0.2):
+    def __init__(self, R, R_test, user_size, item_size, K=10, a=0.01, b=0.2):
         """
         Input variables:
-        - R (np.array) : Rating data R[user_id, item_id] used for training.
+        - R (np.array) : Rating data. R[i] = [[user_id, item_id, rating]] assumed.
                          The rating score should be dimensionless quantity.
-                         Missing data should be set at 0.
         - R_test : Test data by which we examine the validity of the learning model.
         - K (int) : the size of user vector U[i] and item vector V[j].
         - a (float) : learning rate parameter
@@ -30,26 +27,22 @@ class MatrixFactorization():
         self.__b = b
 
         # Get the size of training and test data
-        self.__train_size = np.sum(self.__R > 0)
-        self.__test_size = np.sum(self.__R_test > 0)
+        self.__train_size = self.__R.shape[0]
+        self.__test_size = self.__R_test.shape[0]
 
         # Get the number of user and item.
-        self.__user_size = self.__R.shape[0]
-        self.__item_size = self.__R.shape[1]
+        self.__user_size = user_size
+        self.__item_size = item_size
 
         # Compute mean rating mu
-        self.__mu = np.sum(self.__R)/self.__train_size
+        self.__mu = np.sum(self.__R[:,2])/self.__train_size
 
-        # Stores obsered element of R as 1, and missing element as 0
-        self.__obs_index = (self.__R != 0).astype(int)
-        self.__test_index = (self.__R_test != 0).astype(int)
-
-    def sgd(self, iu, ii):
+    def sgd(self, iu, ii, Rui):
         """
         Perform stochastic gradient descent for (user, item) = (iu, ii)
         """
         # eui = (obsered rating - predicted rating) of (iu, ii) pair
-        eui = self.__R[iu,ii] \
+        eui = Rui \
             - (self.__mu + self.__bu[iu] + self.__bi[ii] + np.dot(self.__U[iu], self.__V[ii]))
 
         # shift parameters by X -> X - a*df/dX, where f = (error)^2 + b*(regularization)
@@ -64,14 +57,13 @@ class MatrixFactorization():
         """
         error = 0.0
 
-        # Rhat is predicted rating matrix
-        Rhat = self.__mu + self.__bu[:, np.newaxis] + self.__bi[np.newaxis, :] + np.dot(self.__U, np.transpose(self.__V))
-        
-        # Squared error consisting only of the observed element of rating matrix R.
-        error = np.sum(((self.__R - Rhat) * self.__obs_index)**2)/self.__train_size
+        for r in self.__R:
+            iu = int(r[0])-1
+            ii = int(r[1])-1
+            error = error + (r[2] - (self.__mu + self.__bu[iu] + self.__bi[ii] + np.dot(self.__U[iu], self.__V[ii])))**2
         
         # Add regularization terms
-        error = error + self.__b/2*(np.sum(self.__U**2) + np.sum(self.__V**2) + np.sum(self.__bu**2) + np.sum(self.__bi**2))
+        error = error/self.__train_size + self.__b/2*(np.sum(self.__U**2) + np.sum(self.__V**2) + np.sum(self.__bu**2) + np.sum(self.__bi**2))
         
         return error
 
@@ -81,15 +73,14 @@ class MatrixFactorization():
         """
         error = 0.0
 
-        # Rhat is predicted rating matrix
-        Rhat = self.__mu + self.__bu[:, np.newaxis] + self.__bi[np.newaxis, :] + np.dot(self.__U, np.transpose(self.__V))
+        for r in self.__R_test:
+            iu = int(r[0])-1
+            ii = int(r[1])-1
+            error = error + (r[2] - (self.__mu + self.__bu[iu] + self.__bi[ii] + np.dot(self.__U[iu], self.__V[ii])))**2
         
-        # Squared error consisting only of the observed element of test matrix R_test.
-        error = np.sum(((self.__R_test - Rhat) * self.__test_index)**2)/self.__test_size
+        return np.sqrt(error/self.__test_size)
         
-        return np.sqrt(error)
-        
-    def train(self, tol=1.e-2, maxitr=2000000, debug=False):
+    def train(self, tol=1.e-2, maxitr=200000, debug=False):
         """
         Training module for a given rating matrix R.
 
@@ -115,14 +106,10 @@ class MatrixFactorization():
         # initialize the object for np.fabs(new_result / old_result)
         ratio = tol*1000
         # initialize the object for error function
-        err_new = self.error() 
-
-        # The set of [user_id], [item_id] giving nonzero rating
-        ius, iis = self.__R.nonzero()
+        err_new = self.error()
 
         # Iteration of sgd
-        size_nonzero = np.size(ius)
-        i_rands = np.arange(size_nonzero)
+        i_rands = np.arange(self.__train_size)
         if debug is True:
             print("-----------------------------------------------------")
             print("epoch, convergence, error function, RMSE of test data")
@@ -131,8 +118,11 @@ class MatrixFactorization():
             np.random.shuffle(i_rands)
             for i_rand in i_rands:
                 # sgd for randomly chosen (user, item) pair
-                self.sgd(iu=ius[i_rand], ii=iis[i_rand])
-
+                iu = int(self.__R[i_rand][0])-1
+                ii = int(self.__R[i_rand][1])-1
+                Rui = int(self.__R[i_rand][2])
+                self.sgd(iu=iu, ii=ii, Rui=Rui)
+            
             err_old = err_new
             err_new = self.error()
             ratio = err_new/err_old
@@ -163,9 +153,9 @@ class MatrixFactorization():
         """
         return self.__mu + self.__bu[iu] + self.__bi[ii] + np.dot(self.__U[iu], self.__V[ii])
 
+
     def rating_matrix(self):
         """
         Return whole predicted rating matrix.
         """
         return self.__mu + self.__bu[:, np.newaxis] + self.__bi[np.newaxis, :] + np.dot(self.__U, np.transpose(self.__V))
-
