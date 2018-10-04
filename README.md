@@ -18,13 +18,13 @@ To use in your code, import the module by, e.g.,
 ```
 from matrix_factorization import MatrixFactorization
 ```
-then give training rating matrix ```R``` and test matrix ```R_test```, and perform training
+then give training rating data ```R```, test data ```R_test```, 
+and the number of users (items) ``` user_size``` (```item_size```) and perform training
 ```
-mf = MatrixFactorization(R=R, R_test=R_test)
+mf = MatrixFactorization(R, R_test=, user_size, item_size)
 mf.train()
 ```
-Note that the missing elements of ```R``` and ```R_test``` are provided as 0;
-otherwise the error function does not work properly.
+Note that the i-th element of ```R``` and ```R_test``` is assumed to be ```[user ID, item ID, rating]```.
 The resulting rating matrix is called by
 ```
 mf.rating_matrix()
